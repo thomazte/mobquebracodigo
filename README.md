@@ -1,22 +1,22 @@
 # MobQuebraCodigo
 
-Versao mobile do QuebraCodigo — app Flutter com jogos interativos, trilhas de programacao e autenticacao, consumindo o mesmo back-end Spring Boot da plataforma web.
+Versão mobile do QuebraCódigo — app Flutter com jogos interativos, trilhas de programação e autenticação, consumindo o mesmo back-end Spring Boot da plataforma web.
 
-## Estrutura do repositorio
+## Estrutura do repositório
 
 ```text
 mobquebracodigo/
 ├── lib/
-│   ├── config/           # URL da API (ApiConfig)
-│   ├── controllers/      # logica de telas
-│   ├── games/            # jogos nativos (2048, memoria, sudoku)
+│   ├── config/            # URL da API (ApiConfig)
+│   ├── controllers/       # lógica de telas
+│   ├── games/             # jogos nativos (2048, memória, sudoku)
 │   ├── models/
-│   ├── services/         # HTTP, auth e sessao
+│   ├── services/          # HTTP, auth e sessão
 │   ├── theme/
-│   ├── views/            # login, cadastro, home, cursos, jogos, perfil
+│   ├── views/             # login, cadastro, home, cursos, jogos, perfil
 │   ├── widgets/
 │   └── main.dart
-├── assets/               # imagens, icones, cursos e jogos
+├── assets/                # imagens, ícones, cursos e jogos
 ├── android/
 ├── ios/
 ├── web/
@@ -36,11 +36,11 @@ flutter pub get
 flutter run
 ```
 
-2. O app sobe no emulador ou aparelho conectado e usa, por padrao, a API da VPS.
+2. O app sobe no emulador ou aparelho conectado e usa, por padrão, a API da VPS.
 
-### API local (mesmo back-end do QuebraCodigo)
+### API local (mesmo back-end do QuebraCódigo)
 
-Se o Spring Boot estiver rodando na sua maquina (porta `8150`):
+Se o Spring Boot estiver rodando na sua máquina (porta `8150`):
 
 ```bash
 flutter run --dart-define=API_BASE_URL=http://SEU_IP_LOCAL:8150
@@ -49,7 +49,7 @@ flutter run --dart-define=API_BASE_URL=http://SEU_IP_LOCAL:8150
 No emulador Android, `localhost` do host costuma ser `10.0.2.2`:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8150
+flutter run --dart-define=API_BASE_URL=[http://10.0.2.2:8150](http://10.0.2.2:8150)
 ```
 
 ### Build de APK debug
@@ -60,34 +60,34 @@ flutter build apk --debug
 
 O arquivo fica em `build/app/outputs/flutter-apk/app-debug.apk`.
 
-## Pre-requisitos
+## Pré-requisitos
 
 - Flutter SDK (canal stable; projeto com Dart `^3.13.3`)
 - Android Studio / SDK Android (emulador ou aparelho com USB debugging)
 - Xcode (apenas se for rodar no iOS / macOS)
 
-Para apontar a uma API local, tambem e necessario o back-end do QuebraCodigo (Spring Boot) em execucao — veja o repositorio web/back-end.
+Para apontar a uma API local, também é necessário o back-end do QuebraCódigo (Spring Boot) em execução — veja o repositório web/back-end.
 
 ## Backend
 
-O app mobile **nao embute** o servidor: ele consome a API REST do QuebraCodigo.
+O app mobile **não embute** o servidor: ele consome a API REST do QuebraCódigo.
 
-- URL padrao (VPS): definida em `lib/config/api_config.dart`
-- Override em tempo de execucao: `--dart-define=API_BASE_URL=...`
+- URL padrão (VPS): definida em `lib/config/api_config.dart`
+- Override em tempo de execução: `--dart-define=API_BASE_URL=...`
 
 Funcionalidades cobertas no app:
 
 - login e cadastro
-- home e navegacao
+- home e navegação
 - listagem de cursos e jogos
-- jogos nativos (2048, memoria, sudoku)
-- perfil do usuario
+- jogos nativos (2048, memória, sudoku)
+- perfil do usuário
 
-## Relacao com o QuebraCodigo web
+## Relação com o QuebraCódigo web
 
-Este repositorio e a **versao mobile** da plataforma. O modulo principal (Spring Boot, Docker, banco e docs detalhados) permanece no repositorio QuebraCodigo.
+Este repositório é a **versão mobile** da plataforma. O módulo principal (Spring Boot, Docker, banco e docs detalhados) permanece no repositório QuebraCódigo.
 
-## Documentacao Flutter
+## Documentação Flutter
 
-- [Documentacao oficial](https://docs.flutter.dev/)
+- [Documentação oficial](https://docs.flutter.dev/)
 - [Codelab — primeiro app](https://docs.flutter.dev/get-started/codelab)
