@@ -17,6 +17,7 @@ class GameScaffold extends StatelessWidget {
   final Widget body;
   final List<Widget> actions;
   final Widget? footer;
+  final bool scrollable;
 
   const GameScaffold({
     super.key,
@@ -26,10 +27,64 @@ class GameScaffold extends StatelessWidget {
     required this.body,
     this.actions = const [],
     this.footer,
+    this.scrollable = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    final header = _Header(title: title, subtitle: subtitle);
+    final statWrap = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final stat in stats) _StatPill(label: stat.label, value: stat.value),
+      ],
+    );
+    final actionWrap = actions.isEmpty
+        ? null
+        : Wrap(spacing: 10, runSpacing: 10, children: actions);
+
+    final page = scrollable
+        ? ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              header,
+              const SizedBox(height: 12),
+              statWrap,
+              if (actionWrap != null) ...[
+                const SizedBox(height: 12),
+                actionWrap,
+              ],
+              const SizedBox(height: 14),
+              body,
+              if (footer != null) ...[
+                const SizedBox(height: 14),
+                footer!,
+              ],
+            ],
+          )
+        : Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                header,
+                const SizedBox(height: 12),
+                statWrap,
+                if (actionWrap != null) ...[
+                  const SizedBox(height: 12),
+                  actionWrap,
+                ],
+                const SizedBox(height: 14),
+                Expanded(child: body),
+                if (footer != null) ...[
+                  const SizedBox(height: 14),
+                  footer!,
+                ],
+              ],
+            ),
+          );
+
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: Container(
@@ -40,32 +95,7 @@ class GameScaffold extends StatelessWidget {
             colors: [QcColors.bg0, QcColors.bg1, QcColors.bg2],
           ),
         ),
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _Header(title: title, subtitle: subtitle),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: stats
-                  .map(
-                    (s) => _StatPill(label: s.label, value: s.value),
-                  )
-                  .toList(),
-            ),
-            if (actions.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Wrap(spacing: 10, runSpacing: 10, children: actions),
-            ],
-            const SizedBox(height: 14),
-            body,
-            if (footer != null) ...[
-              const SizedBox(height: 14),
-              footer!,
-            ],
-          ],
-        ),
+        child: page,
       ),
     );
   }

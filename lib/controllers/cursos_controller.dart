@@ -46,14 +46,6 @@ class CursosController extends ChangeNotifier {
     }
   }
 
-  String lessonChipLabel(CourseModel course, int index) {
-    final raw = course.lessons[index].title;
-    final dot = raw.indexOf('.');
-    final label = dot > -1 ? raw.substring(dot + 1).trim() : raw.trim();
-    if (label.length <= 18) return label;
-    return '${label.substring(0, 18)}...';
-  }
-
   void resetLesson() {
     _selectedLessonIndex = 0;
   }

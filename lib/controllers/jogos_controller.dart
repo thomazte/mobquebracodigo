@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../games/connect4/connect4_page.dart';
+import '../games/flow/flow_page.dart';
 import '../games/game_2048/game_2048_page.dart';
 import '../games/memory/memory_page.dart';
+import '../games/minesweeper/minesweeper_page.dart';
 import '../games/sudoku/sudoku_page.dart';
 import '../models/game_model.dart';
 
@@ -17,6 +20,12 @@ class JogosController {
         return const SudokuPage();
       case 'memory':
         return const MemoryPage();
+      case 'connect4':
+        return const Connect4Page();
+      case 'minesweeper':
+        return const MinesweeperPage();
+      case 'flow':
+        return const FlowPage();
       default:
         return null;
     }

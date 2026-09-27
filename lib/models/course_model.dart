@@ -68,6 +68,13 @@ final List<CourseModel> kCourses = [
         codeExample: 'for i in range(1, 4):\n    print("Número", i)',
         outputExample: 'Número 1\nNúmero 2\nNúmero 3',
       ),
+      LessonModel(
+        title: '5. Strings',
+        content:
+            'Texto em Python fica entre aspas. A funcao len devolve quantos caracteres a string possui.',
+        codeExample: 'texto = "Python"\nprint("Tamanho:", len(texto))',
+        outputExample: 'Tamanho: 6',
+      ),
     ],
   ),
   CourseModel(
@@ -98,6 +105,12 @@ final List<CourseModel> kCourses = [
             'let idade = 18;\nif (idade >= 18) {\n  console.log("Maior de idade");\n} else {\n  console.log("Menor de idade");\n}',
         outputExample: 'Maior de idade',
       ),
+      LessonModel(
+        title: '4. Operadores',
+        content: 'Operadores aritmeticos calculam valores. O resultado pode ser guardado em uma variavel e exibido no console.',
+        codeExample: 'let soma = 10 + 5;\nconsole.log("Soma:", soma);',
+        outputExample: 'Soma: 15',
+      ),
     ],
   ),
   CourseModel(
@@ -119,6 +132,13 @@ final List<CourseModel> kCourses = [
         content: 'Defina tipos explicitamente para variáveis, parâmetros e retornos de funções.',
         codeExample: 'let nome: string = "Carlos";\nlet idade: number = 30;\nconsole.log(nome, idade);',
         outputExample: 'Carlos 30',
+      ),
+      LessonModel(
+        title: '3. Condicionais',
+        content: 'A tipagem nao muda o if. A condicao continua decidindo qual bloco sera executado.',
+        codeExample:
+            'let idade: number = 18;\nif (idade >= 18) {\n  console.log("Maior de idade");\n} else {\n  console.log("Menor de idade");\n}',
+        outputExample: 'Maior de idade',
       ),
     ],
   ),
@@ -145,6 +165,13 @@ final List<CourseModel> kCourses = [
             'public class Main {\n  public static void main(String[] args) {\n    String msg = "Aprendendo Java";\n    System.out.println(msg);\n  }\n}',
         outputExample: 'Aprendendo Java',
       ),
+      LessonModel(
+        title: '3. Condicionais',
+        content: 'No Java, if e else ficam entre chaves e a condicao vai entre parenteses.',
+        codeExample:
+            'public class Main {\n  public static void main(String[] args) {\n    int idade = 18;\n    if (idade >= 18) {\n      System.out.println("Maior de idade");\n    } else {\n      System.out.println("Menor de idade");\n    }\n  }\n}',
+        outputExample: 'Maior de idade',
+      ),
     ],
   ),
   CourseModel(
@@ -162,6 +189,13 @@ final List<CourseModel> kCourses = [
             '#include <iostream>\nusing namespace std;\nint main() {\n  cout << "Olá, C++!";\n  return 0;\n}',
         outputExample: 'Olá, C++!',
       ),
+      LessonModel(
+        title: '2. Saida com variavel',
+        content: 'cout encadeia textos e variaveis com <<. O valor impresso muda se a variavel mudar.',
+        codeExample:
+            '#include <iostream>\nusing namespace std;\nint main() {\n  int pontos = 10;\n  cout << "Pontos: " << pontos;\n  return 0;\n}',
+        outputExample: 'Pontos: 10',
+      ),
     ],
   ),
   CourseModel(
@@ -176,7 +210,25 @@ final List<CourseModel> kCourses = [
         content: 'HTML (HyperText Markup Language) usa tags para estruturar conteúdo em páginas web.',
         codeExample:
             '<!DOCTYPE html>\n<html>\n<body>\n  <h1>Olá, HTML!</h1>\n  <p>Meu primeiro parágrafo.</p>\n</body>\n</html>',
-        outputExample: 'Renderiza título e parágrafo na web.',
+        outputExample: 'Olá, HTML!\nMeu primeiro parágrafo.',
+      ),
+      LessonModel(
+        title: '2. Titulos',
+        content: 'h1 e o titulo principal. h2 e h3 organizam os subtitulos, como os capitulos de um tutorial.',
+        codeExample: '<h1>HTML</h1>\n<h2>Titulos</h2>\n<h3>Exemplo</h3>',
+        outputExample: 'HTML\nTitulos\nExemplo',
+      ),
+      LessonModel(
+        title: '3. Links',
+        content: 'A tag a cria um link. O texto entre as tags e o que a pessoa ve na pagina.',
+        codeExample: '<p>Estude no <a href="https://www.w3schools.com">W3Schools</a>.</p>',
+        outputExample: 'Estude no W3Schools.',
+      ),
+      LessonModel(
+        title: '4. Listas',
+        content: 'ul agrupa itens. Cada li e um item da lista.',
+        codeExample: '<ul>\n  <li>HTML</li>\n  <li>CSS</li>\n  <li>JavaScript</li>\n</ul>',
+        outputExample: 'HTML\nCSS\nJavaScript',
       ),
     ],
   ),
@@ -193,6 +245,12 @@ final List<CourseModel> kCourses = [
         codeExample: '<?php\necho "Olá, PHP!";\n?>',
         outputExample: 'Olá, PHP!',
       ),
+      LessonModel(
+        title: '2. Variaveis',
+        content: 'Variaveis em PHP comecam com \$. O ponto junta textos na hora do echo.',
+        codeExample: '<?php\n\$nome = "Maria";\necho "Ola, " . \$nome;\n?>',
+        outputExample: 'Ola, Maria',
+      ),
     ],
   ),
   CourseModel(
@@ -204,9 +262,22 @@ final List<CourseModel> kCourses = [
     lessons: [
       LessonModel(
         title: '1. Introdução ao SQL',
-        content: 'SQL é a linguagem padrão para interagir com bancos de dados relacionais.',
+        content:
+            'SQL consulta tabelas. Este tutorial usa a tabela usuarios, com as colunas id, nome e ativo.',
         codeExample: 'SELECT * FROM usuarios WHERE ativo = 1;',
-        outputExample: 'Retorna registros de usuários ativos.',
+        outputExample: 'id | nome | ativo\n1 | Ana | 1\n3 | Clara | 1',
+      ),
+      LessonModel(
+        title: '2. ORDER BY',
+        content: 'ORDER BY organiza as linhas. Aqui os nomes aparecem em ordem alfabetica.',
+        codeExample: 'SELECT nome FROM usuarios ORDER BY nome;',
+        outputExample: 'nome\nAna\nBruno\nClara',
+      ),
+      LessonModel(
+        title: '3. INSERT',
+        content: 'INSERT adiciona uma linha. Informe as colunas e os valores na mesma ordem.',
+        codeExample: "INSERT INTO usuarios (id, nome, ativo) VALUES (4, 'Diego', 1);",
+        outputExample: '1 linha inserida.',
       ),
     ],
   ),

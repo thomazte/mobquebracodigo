@@ -16,7 +16,12 @@ class GameModel {
   });
 
   bool get isPlayable =>
-      id == '2048' || id == 'sudoku' || id == 'memory';
+      id == '2048' ||
+      id == 'sudoku' ||
+      id == 'memory' ||
+      id == 'connect4' ||
+      id == 'minesweeper' ||
+      id == 'flow';
 }
 
 const List<GameModel> kGames = [
@@ -59,7 +64,7 @@ const List<GameModel> kGames = [
     id: 'flow',
     title: 'Flow Free',
     subtitle: 'Conecte trilhas sem cruzar.',
-    assetPath: 'assets/jogos/FLOW FREE.png',
+    assetPath: 'assets/jogos/flow_free.png',
     accent: Color(0xFFF472B6),
   ),
 ];

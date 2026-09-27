@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../controllers/cursos_controller.dart';
 import '../models/course_model.dart';
 import '../theme/qc_theme.dart';
 import '../widgets/qc_interactions.dart';
+import 'lesson_challenge_view.dart';
+import 'try_it_view.dart';
 
 class CursosView extends StatefulWidget {
   const CursosView({super.key});
@@ -265,12 +268,56 @@ class CursoDetalheView extends StatefulWidget {
 
 class _CursoDetalheViewState extends State<CursoDetalheView> {
   final _controller = CursosController();
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _passed = <int>{};
+
+  String get _progressKey => 'course_passed_${widget.course.key}';
 
   @override
   void initState() {
     super.initState();
     _controller.resetLesson();
     _controller.addListener(() => setState(() {}));
+    _loadProgress();
+  }
+
+  Future<void> _loadProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getStringList(_progressKey) ?? const <String>[];
+    if (!mounted) return;
+    setState(() {
+      _passed
+        ..clear()
+        ..addAll(stored.map(int.tryParse).whereType<int>().where((index) => index >= 0));
+    });
+  }
+
+  Future<void> _markPassed(int index) async {
+    if (!_passed.add(index)) return;
+    setState(() {});
+    final prefs = await SharedPreferences.getInstance();
+    final saved = _passed.toList()..sort();
+    await prefs.setStringList(_progressKey, saved.map((value) => '$value').toList());
+  }
+
+  bool _canOpen(int index) => index == 0 || _passed.contains(index - 1);
+
+  Future<void> _openChallenge(LessonModel lesson, int index) async {
+    final passed = await qcPushDetail<bool>(
+      context,
+      LessonChallengeView(
+        languageKey: widget.course.key,
+        title: lesson.title,
+        exampleCode: lesson.codeExample,
+        isLast: index == widget.course.lessons.length - 1,
+      ),
+    );
+    if (!mounted || passed != true) return;
+    await _markPassed(index);
+    if (!mounted) return;
+    if (index < widget.course.lessons.length - 1) {
+      _controller.nextLesson(widget.course.lessons.length);
+    }
   }
 
   @override
@@ -282,259 +329,277 @@ class _CursoDetalheViewState extends State<CursoDetalheView> {
   @override
   Widget build(BuildContext context) {
     final index = _controller.selectedLessonIndex;
-    final currentLesson = widget.course.lessons[index];
+    final lessons = widget.course.lessons;
+    final currentLesson = lessons[index];
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: QcColors.bg0,
       appBar: AppBar(
         title: Text(
           widget.course.title,
-          style: const TextStyle(
-            color: QcColors.text,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
+          style: const TextStyle(color: QcColors.text, fontWeight: FontWeight.bold, fontSize: 18),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Aulas',
+            onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+            icon: const Icon(Icons.list_rounded),
+          ),
+        ],
+      ),
+      endDrawer: Drawer(
+        backgroundColor: QcColors.bg1,
+        child: SafeArea(child: _lessonMenu(closeOnTap: true)),
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 900;
+          final showMenu = constraints.maxWidth >= 900;
           return Column(
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                color: QcColors.bg1.withValues(alpha: 0.85),
-                child: SizedBox(
-                  height: 44,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: widget.course.lessons.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 8),
-                    itemBuilder: (context, lessonIndex) {
-                      final isSelected = lessonIndex == index;
-                      return _LessonChip(
-                        label: _controller.lessonChipLabel(widget.course, lessonIndex),
-                        selected: isSelected,
-                        onTap: () => _controller.selectLesson(lessonIndex),
-                      );
-                    },
-                  ),
-                ),
-              ),
               Expanded(
-                child: Container(
-                  padding: EdgeInsets.all(isCompact ? 14 : 20),
-                  color: const Color(0xFF060818),
-                  child: ListView(
-                    children: [
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (showMenu)
                       Container(
-                        margin: const EdgeInsets.only(bottom: 14),
-                        decoration: BoxDecoration(
-                          color: QcColors.panel,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white12),
+                        width: 280,
+                        decoration: const BoxDecoration(
+                          color: QcColors.bg1,
+                          border: Border(right: BorderSide(color: Colors.white12)),
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: Hero(
-                            tag: 'course-${widget.course.key}',
-                            child: Image.asset(
-                              widget.course.assetPath,
-                              height: 160,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
+                        child: _lessonMenu(closeOnTap: false),
+                      ),
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                        children: [
+                          Text(
+                            'Aula ${index + 1} de ${lessons.length}',
+                            style: const TextStyle(
+                              color: QcColors.cyan,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.4,
                             ),
                           ),
-                        ),
-                      ),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 260),
-                        switchInCurve: Curves.easeOutCubic,
-                        switchOutCurve: Curves.easeInCubic,
-                        transitionBuilder: (child, animation) {
-                          final offset = Tween<Offset>(
-                            begin: const Offset(0.03, 0),
-                            end: Offset.zero,
-                          ).animate(animation);
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(position: offset, child: child),
-                          );
-                        },
-                        child: Column(
-                          key: ValueKey(index),
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.course.title,
-                              style: const TextStyle(
-                                color: QcColors.cyan,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.8,
-                              ),
+                          const SizedBox(height: 8),
+                          Text(
+                            currentLesson.title,
+                            style: const TextStyle(
+                              color: QcColors.text,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              currentLesson.title,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            currentLesson.content,
+                            style: const TextStyle(color: QcColors.textDim, fontSize: 15, height: 1.6),
+                          ),
+                          const SizedBox(height: 18),
+                          _exampleCard(currentLesson),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Resultado',
+                            style: TextStyle(color: QcColors.cyan, fontWeight: FontWeight.w800),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: QcColors.bg1,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white12),
+                            ),
+                            child: Text(
+                              currentLesson.outputExample,
                               style: const TextStyle(
                                 color: QcColors.text,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
+                                fontFamily: 'monospace',
+                                height: 1.45,
                               ),
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              currentLesson.content,
-                              style: const TextStyle(
-                                color: QcColors.textDim,
-                                fontSize: 14,
-                                height: 1.6,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            const Text(
-                              'Exemplo de Código:',
-                              style: TextStyle(
-                                color: QcColors.cyan,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: QcColors.bg0,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.white12),
-                              ),
-                              child: Text(
-                                currentLesson.codeExample,
-                                style: const TextStyle(
-                                  color: QcColors.green,
-                                  fontFamily: 'monospace',
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Resultado / Saída:',
-                              style: TextStyle(
-                                color: QcColors.cyan,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: QcColors.bg1,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.white12),
-                              ),
-                              child: Text(
-                                currentLesson.outputExample,
-                                style: const TextStyle(
-                                  color: QcColors.text,
-                                  fontFamily: 'monospace',
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        alignment: WrapAlignment.spaceBetween,
-                        children: [
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: QcColors.bg2,
-                              foregroundColor: QcColors.text,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            ),
-                            onPressed: index > 0 ? _controller.previousLesson : null,
-                            icon: const Icon(Icons.arrow_left),
-                            label: const Text('Anterior'),
                           ),
-                          ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: QcColors.violet,
-                              foregroundColor: QcColors.text,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _passed.contains(index) ? QcColors.bg2 : QcColors.green,
+                                foregroundColor: _passed.contains(index) ? QcColors.text : QcColors.bg0,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                              ),
+                              onPressed: () => _openChallenge(currentLesson, index),
+                              icon: Icon(_passed.contains(index) ? Icons.check_circle_outline : Icons.edit_note_rounded),
+                              label: Text(_passed.contains(index) ? 'Desafio concluido' : 'Resolver desafio'),
                             ),
-                            onPressed: index < widget.course.lessons.length - 1
-                                ? () => _controller.nextLesson(widget.course.lessons.length)
-                                : null,
-                            icon: const Icon(Icons.arrow_right),
-                            label: const Text('Próximo'),
                           ),
+                          if (!_passed.contains(index))
+                            const Padding(
+                              padding: EdgeInsets.only(top: 8),
+                              child: Text(
+                                'A proxima parte abre quando o seu codigo produzir o resultado esperado.',
+                                style: TextStyle(color: QcColors.textMuted, height: 1.4),
+                              ),
+                            ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
+              _lessonNav(index, lessons.length),
             ],
           );
         },
       ),
     );
   }
-}
 
-class _LessonChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _LessonChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return QcPressable(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? QcColors.cyan : QcColors.bg0,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? QcColors.cyan : Colors.white12),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: QcColors.cyan.withValues(alpha: 0.25),
-                    blurRadius: 12,
-                    offset: const Offset(0, 5),
+  Widget _exampleCard(LessonModel lesson) {
+    return Container(
+      decoration: BoxDecoration(
+        color: QcColors.panel,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                const Text(
+                  'Exemplo',
+                  style: TextStyle(color: QcColors.text, fontWeight: FontWeight.w800),
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    qcPushDetail(
+                      context,
+                      TryItView(
+                        languageKey: widget.course.key,
+                        title: lesson.title,
+                        initialCode: lesson.codeExample,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.play_arrow_rounded, color: QcColors.bg0, size: 18),
+                  label: const Text(
+                    'Experimente voce mesmo',
+                    style: TextStyle(color: QcColors.bg0, fontWeight: FontWeight.w800),
                   ),
-                ]
-              : null,
-        ),
-        child: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          style: TextStyle(
-            color: selected ? QcColors.bg0 : QcColors.textDim,
-            fontWeight: FontWeight.w700,
-            fontSize: 12.5,
+                  style: TextButton.styleFrom(
+                    backgroundColor: QcColors.green,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: Text(label),
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: QcColors.bg0,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Text(
+              lesson.codeExample,
+              style: const TextStyle(color: QcColors.green, fontFamily: 'monospace', height: 1.45),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _lessonMenu({required bool closeOnTap}) {
+    final index = _controller.selectedLessonIndex;
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Text(
+            'Tutorial',
+            style: TextStyle(color: QcColors.cyan, fontWeight: FontWeight.w800, fontSize: 16),
+          ),
+        ),
+        for (var lessonIndex = 0; lessonIndex < widget.course.lessons.length; lessonIndex++)
+          ListTile(
+            enabled: _canOpen(lessonIndex),
+            selected: lessonIndex == index,
+            selectedTileColor: QcColors.cyan.withValues(alpha: 0.12),
+            leading: Icon(
+              _passed.contains(lessonIndex)
+                  ? Icons.check_circle_rounded
+                  : _canOpen(lessonIndex)
+                      ? Icons.circle_outlined
+                      : Icons.lock_outline_rounded,
+              color: _passed.contains(lessonIndex) ? QcColors.green : QcColors.textMuted,
+              size: 18,
+            ),
+            title: Text(
+              widget.course.lessons[lessonIndex].title,
+              style: TextStyle(
+                color: lessonIndex == index ? QcColors.cyan : QcColors.text,
+                fontWeight: lessonIndex == index ? FontWeight.w800 : FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
+            onTap: _canOpen(lessonIndex)
+                ? () {
+                    _controller.selectLesson(lessonIndex);
+                    if (closeOnTap) Navigator.pop(context);
+                  }
+                : null,
+          ),
+      ],
+    );
+  }
+
+  Widget _lessonNav(int index, int total) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+      decoration: const BoxDecoration(
+        color: QcColors.bg1,
+        border: Border(top: BorderSide(color: Colors.white12)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: index > 0 ? _controller.previousLesson : null,
+                icon: const Icon(Icons.chevron_left),
+                label: const Text('Anterior'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: QcColors.cyan,
+                  foregroundColor: QcColors.bg0,
+                ),
+                onPressed: index < total - 1 && _passed.contains(index)
+                    ? () => _controller.nextLesson(total)
+                    : null,
+                icon: const Icon(Icons.chevron_right),
+                label: const Text('Proximo'),
+              ),
+            ),
+          ],
         ),
       ),
     );
