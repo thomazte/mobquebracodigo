@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -5,8 +6,9 @@ import 'package:flutter/material.dart';
 import '../../theme/qc_theme.dart';
 import '../core/game_scaffold.dart';
 import '../core/game_widgets.dart';
+import 'flow_levels.dart';
 
-typedef _Pt = (int, int);
+typedef _Pt = FlowPoint;
 
 class FlowPage extends StatefulWidget {
   const FlowPage({super.key});
@@ -26,6 +28,9 @@ class _FlowPageState extends State<FlowPage> {
     Color(0xFF22D3EE),
     Color(0xFFA78BFA),
     Color(0xFFE7F07A),
+    Color(0xFFFB7185),
+    Color(0xFF2DD4BF),
+    Color(0xFFC084FC),
   ];
 
   late int _levelIndex;
@@ -35,7 +40,9 @@ class _FlowPageState extends State<FlowPage> {
   late List<List<_Pt>> _paths;
   int? _active;
   bool _won = false;
+  bool _pointerDown = false;
   _Pt? _cursor;
+  Timer? _advanceTimer;
 
   @override
   void initState() {
@@ -43,12 +50,19 @@ class _FlowPageState extends State<FlowPage> {
     _applyLevel(0);
   }
 
+  @override
+  void dispose() {
+    _advanceTimer?.cancel();
+    super.dispose();
+  }
+
   void _load(int index) {
     setState(() => _applyLevel(index));
   }
 
   void _applyLevel(int index) {
-    final level = _levels[index];
+    _advanceTimer?.cancel();
+    final level = flowLevelAt(index);
     _levelIndex = index;
     _size = level.size;
     _solutions = level.paths.map((path) => [...path]).toList();
@@ -70,6 +84,7 @@ class _FlowPageState extends State<FlowPage> {
     if (row < 0 || col < 0 || row >= _size || col >= _size) return;
     final point = (row, col);
     if (!start && _cursor == point) return;
+    var justWon = false;
     setState(() {
       _cursor = point;
       if (start) {
@@ -77,7 +92,29 @@ class _FlowPageState extends State<FlowPage> {
       } else {
         _moveTo(row, col);
       }
-      _won = _checkWin();
+      justWon = _finishIfSolved();
+    });
+    if (justWon && !_pointerDown) _scheduleAdvance();
+  }
+
+  void _releasePointer() {
+    final shouldAdvance = _pointerDown && _won;
+    _pointerDown = false;
+    if (shouldAdvance) _scheduleAdvance();
+  }
+
+  bool _finishIfSolved() {
+    if (_won) return false;
+    _won = _checkWin();
+    return _won;
+  }
+
+  void _scheduleAdvance() {
+    if (_levelIndex >= kFlowLevelCount - 1) return;
+    _advanceTimer?.cancel();
+    _advanceTimer = Timer(const Duration(milliseconds: 420), () {
+      if (!mounted) return;
+      _load(_levelIndex + 1);
     });
   }
 
@@ -202,6 +239,7 @@ class _FlowPageState extends State<FlowPage> {
 
   void _hint() {
     if (_won) return;
+    var justWon = false;
     setState(() {
       for (var i = 0; i < _solutions.length; i++) {
         if (_matchesSolution(i)) continue;
@@ -212,10 +250,11 @@ class _FlowPageState extends State<FlowPage> {
           if (cut >= 0) _paths[j] = _paths[j].sublist(0, cut);
         }
         _paths[i] = [..._solutions[i]];
-        _won = _checkWin();
+        justWon = _finishIfSolved();
         return;
       }
     });
+    if (justWon) _scheduleAdvance();
   }
 
   int get _linked {
@@ -228,13 +267,13 @@ class _FlowPageState extends State<FlowPage> {
 
   @override
   Widget build(BuildContext context) {
-    final lastLevel = _levelIndex == _levels.length - 1;
+    final lastLevel = _levelIndex == kFlowLevelCount - 1;
     return GameScaffold(
       scrollable: false,
       title: 'Flow Free',
       subtitle: 'Arraste de um ponto ate o par da mesma cor, sem cruzar trilhas.',
       stats: [
-        GameStat(label: 'Fase', value: '${_levelIndex + 1}/${_levels.length}'),
+        GameStat(label: 'Fase', value: '${_levelIndex + 1}/$kFlowLevelCount'),
         GameStat(label: 'Grade', value: '${_size}x$_size'),
         GameStat(label: 'Trilhas', value: '$_linked/${_paths.length}'),
       ],
@@ -250,13 +289,6 @@ class _FlowPageState extends State<FlowPage> {
           icon: Icons.lightbulb_outline_rounded,
           onTap: _hint,
         ),
-        if (_won && !lastLevel)
-          GameActionButton(
-            label: 'Proxima',
-            icon: Icons.arrow_forward_rounded,
-            onTap: () => _load(_levelIndex + 1),
-            primary: true,
-          ),
         if (_won && lastLevel)
           GameActionButton(
             label: 'Do inicio',
@@ -276,8 +308,13 @@ class _FlowPageState extends State<FlowPage> {
                 height: side,
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onPanStart: (details) => _pointer(details.localPosition, side / _size, true),
+                  onPanStart: (details) {
+                    _pointerDown = true;
+                    _pointer(details.localPosition, side / _size, true);
+                  },
                   onPanUpdate: (details) => _pointer(details.localPosition, side / _size, false),
+                  onPanEnd: (_) => _releasePointer(),
+                  onPanCancel: _releasePointer,
                   child: CustomPaint(
                     painter: _FlowPainter(
                       size: _size,
@@ -297,7 +334,7 @@ class _FlowPageState extends State<FlowPage> {
         message: _won
             ? (lastLevel
                 ? 'Todas as fases concluidas. O tabuleiro ficou preenchido.'
-                : 'Fase concluida. Avance para a proxima.')
+                : 'Fase concluida.')
             : 'Preencha o tabuleiro inteiro. Cada cor liga apenas os dois pontos dela.',
         accent: _won ? QcColors.green : const Color(0xFFF472B6),
         icon: _won ? Icons.emoji_events_rounded : Icons.gesture_rounded,
@@ -305,52 +342,6 @@ class _FlowPageState extends State<FlowPage> {
     );
   }
 }
-
-class _FlowLevel {
-  final int size;
-  final List<List<_Pt>> paths;
-
-  const _FlowLevel(this.size, this.paths);
-}
-
-const _levels = <_FlowLevel>[
-  _FlowLevel(5, [
-    [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4)],
-    [(1, 1), (1, 0), (2, 0), (3, 0), (4, 0), (4, 1)],
-    [(1, 2), (1, 3), (2, 3)],
-    [(1, 4), (2, 4), (3, 4), (4, 4), (4, 3)],
-    [(2, 2), (2, 1), (3, 1)],
-    [(3, 3), (3, 2), (4, 2)],
-  ]),
-  _FlowLevel(5, [
-    [(0, 1), (0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (4, 1), (4, 2)],
-    [(0, 2), (0, 3), (0, 4), (1, 4), (2, 4), (3, 4)],
-    [(1, 3), (1, 2), (1, 1), (2, 1), (3, 1)],
-    [(2, 3), (2, 2), (3, 2)],
-    [(3, 3), (4, 3), (4, 4)],
-  ]),
-  _FlowLevel(6, [
-    [(0, 0), (0, 1), (0, 2), (1, 2), (1, 3), (2, 3)],
-    [(0, 3), (0, 4), (0, 5)],
-    [(1, 1), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (5, 1)],
-    [(1, 5), (1, 4), (2, 4), (3, 4)],
-    [(2, 2), (2, 1), (3, 1), (4, 1)],
-    [(2, 5), (3, 5), (4, 5), (5, 5), (5, 4)],
-    [(3, 3), (3, 2), (4, 2), (5, 2)],
-    [(4, 4), (4, 3), (5, 3)],
-  ]),
-  _FlowLevel(7, [
-    [(0, 1), (0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0), (6, 1), (6, 2)],
-    [(0, 2), (0, 3), (1, 3)],
-    [(2, 4), (1, 4), (0, 4), (0, 5), (0, 6), (1, 6), (2, 6), (3, 6), (4, 6), (5, 6)],
-    [(1, 2), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1)],
-    [(1, 5), (2, 5), (3, 5)],
-    [(2, 3), (2, 2), (3, 2), (4, 2), (5, 2)],
-    [(3, 4), (3, 3), (4, 3), (5, 3), (6, 3)],
-    [(4, 5), (4, 4), (5, 4), (6, 4)],
-    [(5, 5), (6, 5), (6, 6)],
-  ]),
-];
 
 class _FlowPainter extends CustomPainter {
   final int size;

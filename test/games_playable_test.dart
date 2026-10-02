@@ -37,6 +37,7 @@ void main() {
   testWidgets('Flow Free monta o tabuleiro', (tester) async {
     await open(tester, const FlowPage());
     expect(find.text('Flow Free'), findsWidgets);
+    expect(find.text('1/100'), findsOneWidget);
     final board = find.descendant(
       of: find.byType(GestureDetector),
       matching: find.byType(CustomPaint),
@@ -44,5 +45,18 @@ void main() {
     await tester.drag(board, const Offset(80, 0));
     await tester.pump();
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Flow Free avanca de fase ao concluir', (tester) async {
+    await open(tester, const FlowPage());
+    expect(find.text('1/100'), findsOneWidget);
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.text('Dica'));
+      await tester.pump();
+    }
+    expect(find.text('Proxima'), findsNothing);
+    expect(find.text('1/100'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('2/100'), findsOneWidget);
   });
 }
