@@ -175,11 +175,11 @@ class Home2View extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
-                              child: ClipRRect(
-                                borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
                                 child: Image.asset(
                                   course.assetPath,
-                                  fit: BoxFit.cover,
+                                  fit: BoxFit.contain,
                                   width: double.infinity,
                                 ),
                               ),
