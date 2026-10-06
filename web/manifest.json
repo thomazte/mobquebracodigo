@@ -1,6 +1,6 @@
 {
-    "name": "mobquebracodigo",
-    "short_name": "mobquebracodigo",
+    "name": "Quebra-Código",
+    "short_name": "Quebra-Código",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
