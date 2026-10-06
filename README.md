@@ -87,6 +87,10 @@ Funcionalidades cobertas no app:
 
 Este repositório é a **versão mobile** da plataforma. O módulo principal (Spring Boot, Docker, banco e docs detalhados) permanece no repositório QuebraCódigo.
 
+## Documentação
+
+Detalhes do projeto em [`docs/`](docs/README.md).
+
 ## Documentação Flutter
 
 - [Documentação oficial](https://docs.flutter.dev/)
